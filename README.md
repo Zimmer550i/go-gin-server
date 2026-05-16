@@ -11,6 +11,7 @@ A clean, well-structured REST API server built with Go and the Gin web framework
 - [Installation & Setup](#installation--setup)
 - [Running the Application](#running-the-application)
 - [API Endpoints](#api-endpoints)
+- [Testing](#testing)
 - [Directory Overview](#directory-overview)
 - [Dependencies](#dependencies)
 
@@ -58,6 +59,7 @@ go-server/
 ├── main.go                          # Application entry point
 ├── go.mod                           # Go module definition
 ├── README.md                        # This file
+├── api_load_test.go                 # API performance/load tests
 ├── controllers/                     # HTTP request handlers
 │   ├── health_controller.go         # Health check endpoints
 │   └── user_controller.go           # User CRUD endpoints
@@ -184,6 +186,111 @@ All endpoints return a standardized JSON response:
 }
 ```
 
+## Testing
+
+This project supports both regular Go tests and API performance/load tests.
+
+### Test Types
+
+| Test Type | Purpose | Command |
+|----------|---------|---------|
+| Unit/API tests | Test project behavior with Go test runner | `go test ./...` |
+| Verbose tests | Show each test name and output | `go test ./... -v` |
+| Race detection | Detect unsafe concurrent access | `go test ./... -race` |
+| Benchmarks | Measure Go benchmark performance | `go test ./... -bench=. -benchmem` |
+
+### API Performance Test
+
+The project includes an API load test file:
+
+```text
+api_load_test.go
+```
+
+This file sends multiple HTTP requests to the running server and prints performance information such as:
+
+```text
+Total Requests
+Success Requests
+Failed Requests
+Total Duration
+Requests/sec
+```
+
+Example output:
+
+```text
+========================================
+API Load Test: GET /users
+========================================
+Total Requests:   1000
+Success Requests: 1000
+Failed Requests:  0
+Total Duration:   82.893208ms
+Requests/sec:     12063.71
+========================================
+```
+
+### Running API Performance Tests
+
+First, start the API server:
+
+```bash
+go run main.go
+```
+
+Then open another terminal and run:
+
+```bash
+go test -v
+```
+
+The API load tests call the real server at:
+
+```text
+http://localhost:8080
+```
+
+### Current API Load Test Coverage
+
+| Test Name | Endpoint Behavior |
+|----------|-------------------|
+| `TestGetUsersAPIPerformance` | Sends repeated `GET /users` requests |
+| `TestCreateUserAPIPerformance` | Sends repeated `POST /users` requests |
+| `TestMixedAPIPerformance` | Sends mixed `GET /users` and `POST /users` requests |
+
+The create-user tests track users created during testing and attempt to clean them up afterward using:
+
+```text
+DELETE /users/:id
+```
+
+### Important Notes
+
+- The API server must be running before API performance tests are executed.
+- Current performance numbers are based on the in-memory repository, so results will be faster than a real database-backed API.
+- If many concurrent `POST /users` requests are tested, the in-memory repository should use `sync.RWMutex` to avoid race conditions.
+- Use the race detector to check for unsafe concurrent access:
+
+```bash
+go test ./... -race -v
+```
+
+### Recommended API Test Cases
+
+| Endpoint | Test Case | Expected Result |
+|----------|-----------|-----------------|
+| GET `/health` | Server health check | HTTP 200 |
+| GET `/users` | Fetch all users | HTTP 200 with user list |
+| POST `/users` | Create valid user | HTTP 201 or 200 with created user |
+| POST `/users` | Invalid JSON body | HTTP 400 |
+| POST `/users` | Missing required fields | HTTP 400 |
+| GET `/users/:id` | Existing user ID | HTTP 200 |
+| GET `/users/:id` | Invalid ID format | HTTP 400 |
+| GET `/users/:id` | Non-existing user ID | HTTP 404 |
+| DELETE `/users/:id` | Existing user ID | HTTP 200 or 204 |
+| DELETE `/users/:id` | Non-existing user ID | HTTP 404 |
+
 ## Directory Overview
 
 ### `main.go`
@@ -266,6 +373,7 @@ Run `go mod tidy` to ensure all dependencies are properly resolved.
 ✅ **DTOs**: Request/response objects separate from internal models  
 ✅ **Code Organization**: Files grouped by functionality  
 ✅ **Standardized Responses**: All endpoints follow a consistent response format  
+✅ **API Performance Testing**: Load tests measure request throughput and success/failure counts  
 ✅ **Clean Code**: Clear naming, single responsibility principle  
 
 ## Future Enhancements
@@ -274,7 +382,7 @@ Run `go mod tidy` to ensure all dependencies are properly resolved.
 - Add authentication and authorization
 - Add input validation and sanitization
 - Add logging and monitoring
-- Add unit and integration tests
+- Expand automated testing with deeper unit, integration, and database-backed tests
 - Add API documentation with Swagger
 - Add middleware for CORS, rate limiting, etc.
 

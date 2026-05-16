@@ -2,10 +2,8 @@ package main
 
 import (
 	"log"
-
 	"go-server/container"
 	"go-server/routes"
-
 	"github.com/gin-gonic/gin"
 )
 

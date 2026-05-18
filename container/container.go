@@ -2,7 +2,7 @@ package container
 
 import (
 	"go-server/controllers"
-	"go-server/repositories"
+	"go-server/databases"
 	"go-server/services"
 )
 
@@ -11,7 +11,7 @@ type Container struct {
 }
 
 func NewContainer() *Container {
-	userRepository := repositories.NewInMemoryUserRepository()
+	userRepository := databases.NewInMemoryUserStore()
 	userService := services.NewUserService(userRepository)
 	userController := controllers.NewUserController(userService)
 

@@ -6,32 +6,25 @@ import (
 	"go-server/repositories"
 )
 
-type UserService interface {
-	GetUsers() []models.User
-	GetUserByID(id int) (models.User, error)
-	CreateUser(req dto.CreateUserRequest) models.User
-	DeleteUser(id int) (models.User, error)
-}
-
-type userService struct {
+type UserService struct {
 	userRepository repositories.UserRepository
 }
 
-func NewUserService(userRepository repositories.UserRepository) UserService {
-	return &userService{
+func NewUserService(userRepository repositories.UserRepository) *UserService {
+	return &UserService{
 		userRepository: userRepository,
 	}
 }
 
-func (s *userService) GetUsers() []models.User {
+func (s *UserService) GetUsers() []models.User {
 	return s.userRepository.FindAll()
 }
 
-func (s *userService) GetUserByID(id int) (models.User, error) {
+func (s *UserService) GetUserByID(id int) (models.User, error) {
 	return s.userRepository.FindByID(id)
 }
 
-func (s *userService) CreateUser(req dto.CreateUserRequest) models.User {
+func (s *UserService) CreateUser(req dto.CreateUserRequest) models.User {
 	user := models.User{
 		Name: req.Name,
 		Age:  req.Age,
@@ -40,6 +33,6 @@ func (s *userService) CreateUser(req dto.CreateUserRequest) models.User {
 	return s.userRepository.Create(user)
 }
 
-func (s *userService) DeleteUser(id int) (models.User, error) {
+func (s *UserService) DeleteUser(id int) (models.User, error) {
 	return s.userRepository.DeleteByID(id)
 }

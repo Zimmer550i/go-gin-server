@@ -24,7 +24,11 @@ func NewUserController(userService *services.UserService) *UserController {
 }
 
 func (c *UserController) GetUsers(ctx *gin.Context) {
-	users := c.userService.GetUsers()
+	users, err := c.userService.GetUsers()
+	if err != nil {
+		utils.Error(ctx, http.StatusInternalServerError, "Something went wrong", err.Error())
+		return
+	}
 
 	utils.Success(ctx, http.StatusOK, "Users fetched successfully", users)
 }
@@ -37,7 +41,11 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	user := c.userService.CreateUser(req)
+	user, err := c.userService.CreateUser(req)
+	if err != nil {
+		utils.Error(ctx, http.StatusInternalServerError, "Something went wrong", err.Error())
+		return
+	}
 
 	utils.Success(ctx, http.StatusCreated, "User created successfully", user)
 }

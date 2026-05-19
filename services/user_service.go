@@ -16,7 +16,7 @@ func NewUserService(userRepository repositories.UserRepository) *UserService {
 	}
 }
 
-func (s *UserService) GetUsers() []models.User {
+func (s *UserService) GetUsers() ([]models.User, error) {
 	return s.userRepository.FindAll()
 }
 
@@ -24,7 +24,7 @@ func (s *UserService) GetUserByID(id int) (models.User, error) {
 	return s.userRepository.FindByID(id)
 }
 
-func (s *UserService) CreateUser(req dto.CreateUserRequest) models.User {
+func (s *UserService) CreateUser(req dto.CreateUserRequest) (models.User, error) {
 	user := models.User{
 		Name: req.Name,
 		Age:  req.Age,

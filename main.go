@@ -6,9 +6,11 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	_ = godotenv.Load()
 	r := gin.Default()
 	c, err := container.NewContainer()
 	if err != nil {

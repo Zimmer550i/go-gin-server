@@ -11,6 +11,7 @@ A clean, well-structured REST API server built with Go and the Gin web framework
 - [Installation & Setup](#installation--setup)
 - [Running the Application](#running-the-application)
 - [API Endpoints](#api-endpoints)
+- [Authentication](#authentication)
 - [Testing](#testing)
 - [Directory Overview](#directory-overview)
 - [Dependencies](#dependencies)
@@ -119,26 +120,31 @@ You should see output like:
 
 ## API Endpoints
 
-### Health Check
+The `GET /users` endpoint requires this request header:
 
-**GET** `/health`
-- Returns the health status of the server
-- Response: `{ "status": "ok" }`
+```http
+Authorization: Bearer Gib me access
+```
+
+The `/health`, `POST /users`, `GET /users/:id`, and `DELETE /users/:id` endpoints do not require authentication.
+
+### Health Check
 
 ### User Management
 
-| Method | Endpoint | Description | Request Body |
-|--------|----------|-------------|--------------|
-| GET | `/users` | Fetch all users | - |
-| POST | `/users` | Create a new user | `{ "name": string, "age": number }` |
-| GET | `/users/:id` | Fetch user by ID | - |
-| DELETE | `/users/:id` | Delete user by ID | - |
+| Method | Endpoint | Auth Required | Description | Request Body |
+|--------|----------|---------------|-------------|--------------|
+| GET | `/users` | Yes | Fetch all users | - |
+| POST | `/users` | No | Create a new user | `{ "name": string, "age": number }` |
+| GET | `/users/:id` | No | Fetch user by ID | - |
+| DELETE | `/users/:id` | No | Delete user by ID | - |
 
 ### Example Requests
 
 **Get all users:**
 ```bash
-curl -X GET http://localhost:8080/users
+curl -X GET http://localhost:8080/users \
+  -H "Authorization: Bearer Gib me access"
 ```
 
 **Create a user:**
@@ -184,6 +190,29 @@ All endpoints return a standardized JSON response:
   "message": "Bad Request",
   "error": "Invalid request body"
 }
+```
+
+## Authentication
+
+Only the `GET /users` endpoint is protected by auth middleware. Requests to this endpoint must include the following header:
+
+```http
+Authorization: Bearer Gib me access
+```
+
+Requests to `GET /users` without this header, with a different token, or with an invalid bearer format will be rejected.
+
+Example unauthorized request:
+
+```bash
+curl -X GET http://localhost:8080/users
+```
+
+Example authorized request:
+
+```bash
+curl -X GET http://localhost:8080/users \
+  -H "Authorization: Bearer Gib me access"
 ```
 
 ## Testing
@@ -253,24 +282,17 @@ http://localhost:8080
 
 ### Current API Load Test Coverage
 
-| Test Name | Endpoint Behavior |
-|----------|-------------------|
-| `TestGetUsersAPIPerformance` | Sends repeated `GET /users` requests |
-| `TestCreateUserAPIPerformance` | Sends repeated `POST /users` requests |
-| `TestMixedAPIPerformance` | Sends mixed `GET /users` and `POST /users` requests |
+Because `GET /users` is protected, API tests should include this header for requests to `GET /users`:
+
+```http
+Authorization: Bearer Gib me access
+```
 
 The create-user tests track users created during testing and attempt to clean them up afterward using:
 
 ```text
 DELETE /users/:id
 ```
-
-### Important Notes
-
-- The API server must be running before API performance tests are executed.
-- Current performance numbers are based on the in-memory repository, so results will be faster than a real database-backed API.
-- If many concurrent `POST /users` requests are tested, the in-memory repository should use `sync.RWMutex` to avoid race conditions.
-- Use the race detector to check for unsafe concurrent access:
 
 ```bash
 go test ./... -race -v
@@ -281,7 +303,9 @@ go test ./... -race -v
 | Endpoint | Test Case | Expected Result |
 |----------|-----------|-----------------|
 | GET `/health` | Server health check | HTTP 200 |
-| GET `/users` | Fetch all users | HTTP 200 with user list |
+| GET `/users` | Missing auth header | HTTP 401 |
+| GET `/users` | Invalid auth token | HTTP 401 |
+| GET `/users` | Valid auth header | HTTP 200 with user list |
 | POST `/users` | Create valid user | HTTP 201 or 200 with created user |
 | POST `/users` | Invalid JSON body | HTTP 400 |
 | POST `/users` | Missing required fields | HTTP 400 |
@@ -350,7 +374,7 @@ Data Transfer Objects for API contracts:
 
 ### `utils/`
 Utility functions and helpers:
-- `response.go`: Standardized API response helper functions (Success, Error, BadRequest)
+- `response.go`: Standardized API response helper functions (Success, Error, BadRequest, UnauthorizedAccess)
 
 ## Dependencies
 
@@ -378,8 +402,7 @@ Run `go mod tidy` to ensure all dependencies are properly resolved.
 
 ## Future Enhancements
 
-- Replace in-memory repository with a real database (PostgreSQL, MongoDB, etc.)
-- Add authentication and authorization
+- Replace static bearer-token authentication with JWT-based authentication and authorization
 - Add input validation and sanitization
 - Add logging and monitoring
 - Expand automated testing with deeper unit, integration, and database-backed tests
